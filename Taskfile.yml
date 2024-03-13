@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  build-rest:
+    desc: "Build image of rest server"
+    cmd: "docker build -t card-checker -f Dockerfile-rest ."
+  build-grpc:
+    desc: "Build image of grpc server"
+    cmd: "docker build -t card-checker -f Dockerfile-grpc ."
+  run:
+    desc: "Run application"
+    cmd: "docker run -p 8081:8081 card-checker"

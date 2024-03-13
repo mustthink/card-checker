@@ -1,0 +1,21 @@
+syntax="proto3";
+
+package card_checker;
+
+option go_package="github.com/mustthink/card-checker";
+
+service Validator {
+  rpc ValidateCard(Card) returns (CardValidationResult);
+}
+
+message Card {
+  string card_number = 1;
+  string card_holder = 2;
+  repeated uint32 expiration_date = 3;
+  uint32 cvv = 4;
+}
+
+message CardValidationResult {
+  bool is_valid = 1;
+  string message = 2;
+}
