@@ -28,26 +28,27 @@ func validator(logger *logrus.Entry) http.HandlerFunc {
 		body, err := io.ReadAll(request.Body)
 		if err != nil {
 			logger.Errorf("%s: %s", op, err.Error())
-			writer.Write([]byte(err.Error()))
 			writer.WriteHeader(http.StatusInternalServerError)
+			writer.Write([]byte(err.Error()))
 			return
 		}
 
 		c, err := card.NewFromBody(body)
 		if err != nil {
 			logger.Errorf("%s: %s", op, err.Error())
-			writer.Write([]byte(err.Error()))
 			writer.WriteHeader(http.StatusBadRequest)
+			writer.Write([]byte(err.Error()))
 			return
 		}
 
 		if err := c.Validate(); err != nil {
 			logger.Errorf("%s: %s", op, err.Error())
-			writer.Write([]byte(err.Error()))
 			writer.WriteHeader(http.StatusBadRequest)
+			writer.Write([]byte(err.Error()))
 			return
 		}
 
 		writer.WriteHeader(http.StatusOK)
+		writer.Write([]byte("card valid"))
 	}
 }

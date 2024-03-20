@@ -10,10 +10,9 @@ import (
 )
 
 type Card struct {
-	CardNumber     string  `json:"card_number"`     // 16 digits
-	CardHolder     string  `json:"card_holder"`     // non-empty`
-	ExpirationDate [2]uint `json:"expiration_date"` // month and year
-	CVV            uint16  `json:"cvv"`             // 3 digits
+	CardNumber      string `json:"card_number"`      // 16 digits
+	ExpirationMonth uint   `json:"expiration_month"` // 1-12
+	ExpirationYear  uint   `json:"expiration_year"`  // 4 digits
 }
 
 func NewFromBody(body []byte) (*Card, error) {
@@ -27,55 +26,30 @@ func NewFromBody(body []byte) (*Card, error) {
 
 func NewFromGRPCRequest(card *card_checker.Card) *Card {
 	return &Card{
-		CardNumber:     card.CardNumber,
-		CardHolder:     card.CardHolder,
-		ExpirationDate: [2]uint{uint(card.ExpirationDate[0]), uint(card.ExpirationDate[1])},
-		CVV:            uint16(card.Cvv),
+		CardNumber:      card.CardNumber,
+		ExpirationMonth: uint(card.ExpirationMonth),
+		ExpirationYear:  uint(card.ExpirationYear),
 	}
-}
-
-func (c *Card) baseValidation() error {
-	switch {
-	case len(c.CardNumber) != 16:
-		return fmt.Errorf("card number must be 16 digits")
-	case len(c.CardHolder) == 0:
-		return fmt.Errorf("card holder name is required")
-	case c.ExpirationDate[0] < 1 || c.ExpirationDate[0] > 12:
-		return fmt.Errorf("expiration month must be between 1 and 12")
-	case c.CVV == 0 || c.CVV > 999:
-		return fmt.Errorf("cvv is required")
-	}
-	return nil
 }
 
 func (c *Card) Validate() error {
-	err := c.baseValidation()
-	if err != nil {
-		return err
-	}
-
 	switch {
+	case len(c.CardNumber) != 16:
+		return fmt.Errorf("card number is invalid")
 	case !luhnCheck(c.CardNumber):
-		return fmt.Errorf("invalid card number")
-	case checkExpirationDate(c.ExpirationDate):
-		return fmt.Errorf("card is expired")
+		return fmt.Errorf("card number is invalid")
+
+	case c.ExpirationMonth < 1 || c.ExpirationMonth > 12:
+		return fmt.Errorf("expiration month is invalid")
+	case c.ExpirationYear == uint(time.Now().Year()):
+		if c.ExpirationMonth < uint(time.Now().Month()) {
+			return fmt.Errorf("card expired")
+		}
+	case c.ExpirationYear < uint(time.Now().Year()):
+		return fmt.Errorf("card expired")
 	}
 
 	return nil
-}
-
-func checkExpirationDate(expirationDate [2]uint) bool {
-	check := int(expirationDate[1]) - time.Now().Year()
-
-	if check > 0 {
-		return true
-	}
-
-	if check == 0 {
-		return expirationDate[0] > uint(time.Now().Month())
-	}
-
-	return false
 }
 
 func luhnCheck(number string) bool {
